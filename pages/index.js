@@ -5,11 +5,9 @@ import Head from 'next/head';
 // ═══════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════
-const THREADS_APP_ID = process.env.NEXT_PUBLIC_THREADS_APP_ID || '2357613188074092';
-const REDIRECT_URI = process.env.NEXT_PUBLIC_REDIRECT_URI || 'https://threads-engine-app.vercel.app/api/auth';
-const SCOPES = 'threads_basic,threads_content_publish,threads_read_replies,threads_manage_replies';
-const OAUTH_URL = `https://threads.net/oauth/authorize?client_id=${THREADS_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${SCOPES}&response_type=code`;
 const CTA_LINK = 'https://naver.me/FIfliP1l';
+const STORED_TOKEN_KEY = '__te_token';
+const STORED_USER_KEY = '__te_user';
 
 // ═══════════════════════════════════════════════════
 // 후킹 콘텐츠 데이터 (16개 카테고리)
@@ -340,6 +338,8 @@ function PostCard({ post, onEdit, onDelete, onTimeChange, onPublish, publishing 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tokenInput, setTokenInput] = useState('');
+  const [tokenLoading, setTokenLoading] = useState(false);
   const [date, setDate] = useState(new Date());
   const [posts, setPosts] = useState([]);
   const [editPost, setEditPost] = useState(null);
@@ -349,23 +349,54 @@ export default function Home() {
   const [tab, setTab] = useState("all");
   const [settings, setSettings] = useState({ postsPerDay:16, startTime:"07:00", endTime:"22:30" });
   const [copied, setCopied] = useState(false);
+  const [accessToken, setAccessToken] = useState('');
 
-  // Check auth on load
+  // Check saved token on load
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('auth') === 'success') {
-      window.history.replaceState({}, '', '/');
-    }
-    if (params.get('error')) {
-      setToast({ msg: `로그인 오류: ${params.get('detail') || params.get('error')}`, type:'error' });
-      window.history.replaceState({}, '', '/');
-    }
-
-    fetch('/api/me').then(r => r.ok ? r.json() : null).then(data => {
-      if (data && !data.error) setUser(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    try {
+      const savedToken = sessionStorage.getItem(STORED_TOKEN_KEY);
+      const savedUser = sessionStorage.getItem(STORED_USER_KEY);
+      if (savedToken && savedUser) {
+        setAccessToken(savedToken);
+        setUser(JSON.parse(savedUser));
+      }
+    } catch {}
+    setLoading(false);
   }, []);
+
+  // Token login function
+  const handleTokenLogin = async (token) => {
+    if (!token || token.trim().length < 10) {
+      setToast({ msg: '유효한 토큰을 입력해주세요', type: 'error' });
+      return;
+    }
+    setTokenLoading(true);
+    try {
+      const res = await fetch(`https://graph.threads.net/v1.0/me?fields=id,username,name,threads_profile_picture_url&access_token=${token.trim()}`);
+      const profile = await res.json();
+      if (profile.error) {
+        setToast({ msg: `토큰 오류: ${profile.error.message}`, type: 'error' });
+        setTokenLoading(false);
+        return;
+      }
+      const userData = {
+        userId: profile.id,
+        username: profile.username || 'user',
+        displayName: profile.name || profile.username || 'User',
+        profilePic: profile.threads_profile_picture_url || null,
+      };
+      setUser(userData);
+      setAccessToken(token.trim());
+      try {
+        sessionStorage.setItem(STORED_TOKEN_KEY, token.trim());
+        sessionStorage.setItem(STORED_USER_KEY, JSON.stringify(userData));
+      } catch {}
+      setToast({ msg: `@${userData.username} 로그인 성공!`, type: 'success' });
+    } catch (err) {
+      setToast({ msg: `연결 오류: ${err.message}`, type: 'error' });
+    }
+    setTokenLoading(false);
+  };
 
   useEffect(() => { setPosts(getDailyPosts(date, settings.postsPerDay)); }, [date, settings.postsPerDay]);
 
@@ -374,12 +405,13 @@ export default function Home() {
 
   // Real publish to Threads API
   const handlePublish = async (post) => {
+    if (!accessToken) { setToast({ msg: '토큰이 없습니다. 다시 로그인해주세요.', type: 'error' }); return; }
     setPublishing(post.id);
     try {
       const res = await fetch('/api/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: post.content, comments: post.comments }),
+        body: JSON.stringify({ accessToken, content: post.content, comments: post.comments }),
       });
       const data = await res.json();
       if (data.success) {
@@ -406,7 +438,7 @@ export default function Home() {
       const res = await fetch('/api/publish-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ posts: scheduled.map(p => ({ content:p.content, comments:p.comments, scheduledTime:p.scheduledTime })) }),
+        body: JSON.stringify({ accessToken, posts: scheduled.map(p => ({ content:p.content, comments:p.comments, scheduledTime:p.scheduledTime })) }),
       });
       const data = await res.json();
       if (data.success) {
@@ -444,13 +476,28 @@ export default function Home() {
           <h1 style={{fontFamily:"'Outfit'",fontSize:36,fontWeight:800,letterSpacing:"-.04em",marginBottom:6}}>Threads Engine</h1>
           <p style={{color:"var(--t2)",fontSize:13.5,lineHeight:1.7,marginBottom:32}}>AI 인테리어 콘텐츠 자동 생성 · 예약 발행 · 댓글 자동화</p>
 
-          <a href={OAUTH_URL} style={{display:"flex",width:"100%",padding:"14px 24px",background:"#fff",color:"#000",borderRadius:"var(--r)",fontSize:15,fontWeight:600,textDecoration:"none",alignItems:"center",justifyContent:"center",gap:10,boxShadow:"0 4px 24px rgba(255,255,255,.08)",transition:"all .2s"}}>
-            <Ico.Threads style={{width:20,height:20}}/> Threads 계정으로 로그인
-          </a>
+          <div style={{background:"var(--bg3)",border:"1px solid var(--bdr)",borderRadius:"var(--r)",padding:20,textAlign:"left",marginBottom:16}}>
+            <label style={{fontSize:12,color:"var(--t2)",marginBottom:8,display:"block",fontWeight:500}}>Threads Access Token 입력</label>
+            <p style={{fontSize:10,color:"var(--t3)",marginBottom:10,lineHeight:1.6}}>Meta Developer 대시보드 → 이용 사례 → 설정 → 사용자 토큰 생성기에서 발급받은 토큰을 입력하세요</p>
+            <div style={{display:"flex",gap:6}}>
+              <input
+                type="password"
+                className="inp"
+                placeholder="THAAhg... 형태의 토큰 붙여넣기"
+                value={tokenInput}
+                onChange={e => setTokenInput(e.target.value)}
+                onKeyDown={e => e.key==='Enter' && handleTokenLogin(tokenInput)}
+                style={{flex:1}}
+              />
+              <button className="btn btn-gold" onClick={() => handleTokenLogin(tokenInput)} disabled={tokenLoading}>
+                {tokenLoading ? "확인 중..." : "연결"}
+              </button>
+            </div>
+          </div>
 
-          <p style={{marginTop:10,fontSize:11,color:"var(--t3)"}}>OAuth 2.0 · 비밀번호 저장 없음 · 누구나 로그인 가능</p>
+          <p style={{fontSize:10,color:"var(--t3)"}}>토큰은 브라우저 세션에만 저장되며, 새로고침 시 유지됩니다</p>
 
-          <div style={{marginTop:28,padding:"12px 14px",background:"var(--bg2)",borderRadius:"var(--rs)",border:"1px solid var(--bdr)"}}>
+          <div style={{marginTop:20,padding:"12px 14px",background:"var(--bg2)",borderRadius:"var(--rs)",border:"1px solid var(--bdr)"}}>
             <p style={{fontSize:10,color:"var(--t3)",marginBottom:6}}>이 링크를 친구에게 공유하세요</p>
             <div style={{display:"flex",gap:6}}>
               <input readOnly value={typeof window!=="undefined"?window.location.href:""} style={{flex:1,padding:"6px 8px",background:"var(--bg)",border:"1px solid var(--bdr)",borderRadius:"var(--rx)",color:"var(--t3)",fontSize:11,outline:"none",fontFamily:"monospace"}}/>
@@ -481,7 +528,7 @@ export default function Home() {
               {user.profilePic ? <img src={user.profilePic} style={{width:24,height:24,borderRadius:"50%"}} alt=""/> : <div style={{width:24,height:24,borderRadius:"50%",background:"linear-gradient(135deg,var(--gold),var(--blu))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#000"}}>{user.displayName?.[0]||"U"}</div>}
               <span className="hide-m" style={{fontSize:11,color:"var(--t2)"}}>@{user.username}</span>
             </div>
-            <a href="/api/logout" className="btn btn-ghost" style={{padding:"5px 7px",textDecoration:"none"}}><Ico.Out/></a>
+            <a href="#" onClick={(e)=>{e.preventDefault();setUser(null);setAccessToken('');try{sessionStorage.removeItem(STORED_TOKEN_KEY);sessionStorage.removeItem(STORED_USER_KEY)}catch{}}} className="btn btn-ghost" style={{padding:"5px 7px",textDecoration:"none"}}><Ico.Out/></a>
           </div>
         </div>
       </header>
