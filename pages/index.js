@@ -191,150 +191,74 @@ const POSTS_DB = [
   },
 ];
 
-// Time slots
-const ALL_TIMES = [];
-for (let h = 6; h <= 23; h++) {
-  ALL_TIMES.push(`${String(h).padStart(2,"0")}:00`);
-  ALL_TIMES.push(`${String(h).padStart(2,"0")}:30`);
-}
-
+// ─── Time & Post Generation ───
 function getDailyPosts(date, count = 16) {
   const day = Math.floor((date - new Date(date.getFullYear(), 0, 0)) / 86400000);
   const posts = [];
-  const startMin = 7 * 60, endMin = 22 * 60 + 30;
-  const interval = Math.floor((endMin - startMin) / Math.max(count - 1, 1));
-
+  const s = 7*60, e = 22*60+30;
+  const gap = Math.floor((e - s) / Math.max(count - 1, 1));
   for (let i = 0; i < count; i++) {
     const idx = (day * 3 + i) % POSTS_DB.length;
     const tpl = POSTS_DB[idx];
-    const mins = startMin + interval * i;
+    const mins = s + gap * i;
     const time = `${String(Math.floor(mins/60)).padStart(2,"0")}:${String(mins%60).padStart(2,"0")}`;
-
     posts.push({
       id: `${date.toISOString().slice(0,10)}-${i}`,
-      category: tpl.cat,
-      content: `${tpl.hook}\n\n${tpl.body}`,
-      hookLine: tpl.hook,
-      comments: [...tpl.comments],
-      scheduledTime: time,
-      status: "scheduled",
-      engagement: { views: Math.floor(Math.random()*8000)+500, likes: Math.floor(Math.random()*500)+20, replies: Math.floor(Math.random()*80)+5, reposts: Math.floor(Math.random()*40)+2 },
+      category: tpl.cat, content: `${tpl.hook}\n\n${tpl.body}`, hookLine: tpl.hook,
+      comments: [...tpl.comments], scheduledTime: time, status: "scheduled",
     });
   }
   return posts;
 }
 
-// ═══════════════════════════════════════════════════
-// SVG ICONS (inline)
-// ═══════════════════════════════════════════════════
-const Ico = {
-  Threads: (p={}) => <svg viewBox="0 0 24 24" fill="currentColor" style={{width:20,height:20,...(p.style||{})}}><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.028-3.58.88-6.433 2.523-8.478C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.592 12c.024 3.088.715 5.5 2.053 7.164 1.43 1.783 3.63 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.29 3.276-.958 1.193-2.356 1.853-4.073 1.922h-.01c-1.72.07-3.229-.36-4.25-1.2-.856-.71-1.396-1.7-1.492-2.89h-.002c-.059-.69.04-1.496.476-2.333.68-1.311 1.928-2.153 3.628-2.448a14.544 14.544 0 0 1 2.995-.135c-.09-.473-.257-.866-.497-1.176-.37-.476-.94-.737-1.7-.78h-.036c-.87.016-1.783.31-2.51.706l-.907-1.753c.97-.53 2.258-.89 3.51-.918h.074c1.28.048 2.3.487 3.036 1.306.577.64.96 1.47 1.15 2.488.462.076.91.173 1.34.294l.003.001c1.3.365 2.38.96 3.207 1.78.987.978 1.6 2.236 1.767 3.631.186 1.55-.134 3.243-1.058 4.724C20.28 22.088 17.636 23.97 12.186 24zm-1.638-7.87c.9-.03 1.63-.335 2.16-.92.41-.449.695-1.063.876-1.84a10.527 10.527 0 0 0-2.174-.093c-1.162.166-1.882.653-2.21 1.284-.18.346-.223.684-.19.988.065.622.47 1.16 1.538 1.58z"/></svg>,
-  Gear: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:17,height:17}}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
-  Out: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:17,height:17}}><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-  Share: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:15,height:15}}><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>,
-  Left: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:17,height:17}}><polyline points="15,18 9,12 15,6"/></svg>,
-  Right: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:17,height:17}}><polyline points="9,6 15,12 9,18"/></svg>,
-  Spark: () => <svg viewBox="0 0 24 24" fill="currentColor" style={{width:16,height:16}}><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>,
-  Check: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{width:15,height:15}}><polyline points="20,6 9,17 4,12"/></svg>,
-  Edit: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:14,height:14}}><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
-  Trash: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:13,height:13}}><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>,
-  Eye: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:13,height:13}}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
-  Heart: () => <svg viewBox="0 0 24 24" fill="currentColor" style={{width:13,height:13}}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>,
-  Reply: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:13,height:13}}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
-  Repost: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:13,height:13}}><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>,
-  Chat: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:13,height:13}}><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>,
-  Down: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:12,height:12}}><polyline points="6,9 12,15 18,9"/></svg>,
-  Up: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{width:12,height:12}}><polyline points="6,15 12,9 18,15"/></svg>,
-  Link: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:12,height:12}}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>,
-  Copy: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:14,height:14}}><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>,
-  Send: () => <svg viewBox="0 0 24 24" fill="currentColor" style={{width:14,height:14}}><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>,
-  Clock: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{width:14,height:14}}><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>,
-};
-
-// ═══════════════════════════════════════════════════
-// COMPONENTS
-// ═══════════════════════════════════════════════════
-
-function Toast({ msg, type, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 3500); return ()=>clearTimeout(t); }, []);
-  return <div className={`toast toast-${type}`}>{msg}</div>;
+function fmtDate(d) {
+  const days = ['일','월','화','수','목','금','토'];
+  return `${d.getMonth()+1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
 }
 
-function PostCard({ post, onEdit, onDelete, onTimeChange, onPublish, publishing }) {
-  const [exp, setExp] = useState(false);
-  const [showC, setShowC] = useState(false);
-  const st = { scheduled:{bg:"var(--gold2)",c:"var(--gold)",l:"예약"}, posted:{bg:"var(--grn2)",c:"var(--grn)",l:"발행완료"}, failed:{bg:"var(--red2)",c:"var(--red)",l:"실패"} }[post.status];
-  const dotCls = post.status==="scheduled"?"dot-gold":post.status==="posted"?"dot-grn":"dot-red";
+// ─── Toast ───
+function Toast({ msg, type, onClose }) {
+  useEffect(()=>{ const t = setTimeout(onClose, 3200); return ()=>clearTimeout(t); },[]);
+  return <div className={`toast ${type==='ok'?'toast-ok':'toast-err'}`}>{msg}</div>;
+}
 
+// ─── PostCard ───
+function PostCard({ post, onEdit, onPublish, onTimeChange, publishing }) {
+  const [expanded, setExpanded] = useState(false);
   return (
-    <div className="card" style={{padding:0,overflow:"hidden"}}>
-      <div style={{padding:"11px 15px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid var(--bdr)",flexWrap:"wrap",gap:6}}>
-        <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
-          <span className="tag" style={{background:st.bg,color:st.c}}><span className={`dot ${dotCls}`} style={{marginRight:5}}/>{st.l}</span>
-          <span className="tag" style={{background:"var(--blu2)",color:"var(--blu)"}}>{post.category}</span>
-          <span style={{fontSize:11,color:"var(--t3)",display:"flex",alignItems:"center",gap:3}}><Ico.Clock/>{post.scheduledTime}</span>
+    <div className={`pc ${post.status==='posted'?'pc-done':post.status==='failed'?'pc-fail':''}`}>
+      <div className="pc-row">
+        <div className="pc-left">
+          <span className={`pc-dot ${post.status}`}/>
+          <span className="pc-cat">{post.category}</span>
+          <input type="time" className="pc-time" value={post.scheduledTime} step="60"
+            onChange={e=>onTimeChange(post.id,e.target.value)} disabled={post.status==='posted'}/>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:4}}>
-          {post.status==="scheduled" && (
-            <button className="btn btn-gold" style={{padding:"5px 10px",fontSize:12}} onClick={()=>onPublish(post)} disabled={publishing}>
-              {publishing ? "발행 중..." : <><Ico.Send/> 발행</>}
-            </button>
+        <div className="pc-right">
+          {post.status==='scheduled' && (
+            <>
+              <button className="b-sm" onClick={()=>onEdit(post)} disabled={publishing}>수정</button>
+              <button className="b-sm b-accent" onClick={()=>onPublish(post)} disabled={publishing}>
+                {publishing?'발행 중...':'발행'}
+              </button>
+            </>
           )}
-          <select className="inp" value={post.scheduledTime} onChange={e=>onTimeChange(post.id,e.target.value)} style={{width:85,padding:"4px 24px 4px 8px",fontSize:11}}>
-            {ALL_TIMES.map(t=><option key={t} value={t}>{t}</option>)}
-          </select>
-          <button className="btn btn-ghost" style={{padding:"4px 6px"}} onClick={()=>onEdit(post)}><Ico.Edit/></button>
-          <button className="btn btn-red" style={{padding:"4px 6px"}} onClick={()=>onDelete(post.id)}><Ico.Trash/></button>
+          {post.status==='posted' && <span className="pc-posted">발행 완료</span>}
+          {post.status==='failed' && <button className="b-sm b-accent" onClick={()=>onPublish(post)} disabled={publishing}>재시도</button>}
         </div>
       </div>
-
-      <div style={{padding:"13px 15px 0"}}><p style={{fontSize:14,fontWeight:600,lineHeight:1.7,color:"var(--gold)",whiteSpace:"pre-wrap"}}>{post.hookLine}</p></div>
-
-      <div style={{padding:"6px 15px 12px",cursor:"pointer"}} onClick={()=>setExp(!exp)}>
-        <div style={{position:"relative",maxHeight:exp?"none":72,overflow:"hidden"}}>
-          <p style={{fontSize:12.5,lineHeight:1.8,color:"var(--t2)",whiteSpace:"pre-wrap"}}>{post.content.split("\n\n").slice(1).join("\n\n")}</p>
-          {!exp && <div style={{position:"absolute",bottom:0,left:0,right:0,height:40,background:"linear-gradient(transparent, var(--bg3))"}}/>}
-        </div>
-        <span style={{fontSize:10,color:"var(--gold)",display:"inline-flex",alignItems:"center",gap:3,marginTop:3}}>{exp?<><Ico.Up/>접기</>:<><Ico.Down/>더 보기</>}</span>
+      <div className="pc-hook">{post.hookLine}</div>
+      <div className={`pc-body ${expanded?'':'pc-clamp'}`}>{post.content.split('\n\n').slice(1).join('\n\n')}</div>
+      {!expanded && <button className="pc-more" onClick={()=>setExpanded(true)}>더 보기</button>}
+      <div className="pc-foot">
+        <span className="pc-cmnt">댓글 {post.comments.length}개</span>
+        {post.comments[0]?.includes(CTA_LINK) && <span className="pc-cta">CTA</span>}
       </div>
-
-      <div style={{padding:"0 15px 10px"}}>
-        <button onClick={()=>setShowC(!showC)} style={{background:"var(--bg2)",border:"1px solid var(--bdr)",borderRadius:"var(--rs)",padding:"7px 12px",color:showC?"var(--gold)":"var(--t3)",fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",gap:5,width:"100%",justifyContent:"center",fontFamily:"inherit",transition:"all .2s"}}>
-          <Ico.Chat/> 자동 댓글 {post.comments.length}개 {showC?"접기":"보기"}
-          <span className="tag" style={{background:"var(--gold2)",color:"var(--gold)",marginLeft:4,fontSize:9}}>CTA 포함</span>
-        </button>
-      </div>
-
-      {showC && (
-        <div style={{borderTop:"1px solid var(--bdr)",padding:"10px 15px"}} className="anim-in">
-          {post.comments.map((c,i)=>(
-            <div key={i} style={{padding:"9px 12px",marginBottom:8,background:i===0?"rgba(232,197,71,.06)":"var(--bg2)",border:`1px solid ${i===0?"rgba(232,197,71,.15)":"var(--bdr)"}`,borderRadius:"var(--rs)",position:"relative"}}>
-              {i===0 && <span style={{position:"absolute",top:7,right:8,fontSize:8,fontWeight:600,color:"var(--gold)",background:"var(--gold2)",padding:"1px 5px",borderRadius:3}}>공사신청 CTA</span>}
-              <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:5}}>
-                <div style={{width:18,height:18,borderRadius:"50%",background:i===0?"var(--gold)":"var(--bg5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:i===0?"#000":"var(--t3)"}}>{i+1}</div>
-                <span style={{fontSize:10,color:"var(--t3)"}}>자동 댓글 #{i+1}</span>
-              </div>
-              <p style={{fontSize:11.5,lineHeight:1.7,color:"var(--t2)",whiteSpace:"pre-wrap"}}>{c}</p>
-              {c.includes("naver.me") && <a href={CTA_LINK} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:3,marginTop:4,fontSize:10,color:"var(--gold)",textDecoration:"none"}}><Ico.Link/> 공사 신청 폼</a>}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {post.status==="posted" && (
-        <div style={{padding:"8px 15px",borderTop:"1px solid var(--bdr)",display:"flex",gap:16}}>
-          {[{i:<Ico.Eye/>,v:post.engagement.views},{i:<Ico.Heart/>,v:post.engagement.likes},{i:<Ico.Reply/>,v:post.engagement.replies},{i:<Ico.Repost/>,v:post.engagement.reposts}].map((s,idx)=>
-            <div key={idx} style={{display:"flex",alignItems:"center",gap:3,fontSize:10,color:"var(--t3)"}}>{s.i}<span style={{color:"var(--t2)"}}>{s.v.toLocaleString()}</span></div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
 
-// ═══════════════════════════════════════════════════
-// MAIN PAGE
-// ═══════════════════════════════════════════════════
+// ─── MAIN ───
 export default function Home() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -343,288 +267,318 @@ export default function Home() {
   const [date, setDate] = useState(new Date());
   const [posts, setPosts] = useState([]);
   const [editPost, setEditPost] = useState(null);
-  const [showSettings, setShowSettings] = useState(false);
   const [toast, setToast] = useState(null);
   const [publishing, setPublishing] = useState(null);
-  const [tab, setTab] = useState("all");
-  const [settings, setSettings] = useState({ postsPerDay:16, startTime:"07:00", endTime:"22:30" });
-  const [copied, setCopied] = useState(false);
+  const [tab, setTab] = useState('scheduled');
   const [accessToken, setAccessToken] = useState('');
+  const [autoMode, setAutoMode] = useState(false);
 
-  // Check saved token on load
+  // Load saved session
   useEffect(() => {
     try {
-      const savedToken = sessionStorage.getItem(STORED_TOKEN_KEY);
-      const savedUser = sessionStorage.getItem(STORED_USER_KEY);
-      if (savedToken && savedUser) {
-        setAccessToken(savedToken);
-        setUser(JSON.parse(savedUser));
-      }
+      const t = sessionStorage.getItem(STORED_TOKEN_KEY);
+      const u = sessionStorage.getItem(STORED_USER_KEY);
+      if (t && u) { setAccessToken(t); setUser(JSON.parse(u)); }
     } catch {}
     setLoading(false);
   }, []);
 
-  // Token login function
+  // Generate posts for date
+  useEffect(() => { setPosts(getDailyPosts(date)); }, [date]);
+
+  // ─── Auto scheduler: check every minute ───
+  useEffect(() => {
+    if (!autoMode || !accessToken) return;
+    const check = () => {
+      const now = new Date();
+      const ct = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      setPosts(prev => {
+        const target = prev.find(p => p.status === 'scheduled' && p.scheduledTime === ct);
+        if (target) doPublish(target);
+        return prev;
+      });
+    };
+    check(); // run immediately
+    const iv = setInterval(check, 60000);
+    return () => clearInterval(iv);
+  }, [autoMode, accessToken]);
+
+  // Token login
   const handleTokenLogin = async (token) => {
-    if (!token || token.trim().length < 10) {
-      setToast({ msg: '유효한 토큰을 입력해주세요', type: 'error' });
-      return;
-    }
+    if (!token || token.trim().length < 10) { setToast({msg:'유효한 토큰을 입력해주세요',t:'err'}); return; }
     setTokenLoading(true);
     try {
       const res = await fetch(`https://graph.threads.net/v1.0/me?fields=id,username,name,threads_profile_picture_url&access_token=${token.trim()}`);
-      const profile = await res.json();
-      if (profile.error) {
-        setToast({ msg: `토큰 오류: ${profile.error.message}`, type: 'error' });
-        setTokenLoading(false);
-        return;
-      }
-      const userData = {
-        userId: profile.id,
-        username: profile.username || 'user',
-        displayName: profile.name || profile.username || 'User',
-        profilePic: profile.threads_profile_picture_url || null,
-      };
-      setUser(userData);
-      setAccessToken(token.trim());
-      try {
-        sessionStorage.setItem(STORED_TOKEN_KEY, token.trim());
-        sessionStorage.setItem(STORED_USER_KEY, JSON.stringify(userData));
-      } catch {}
-      setToast({ msg: `@${userData.username} 로그인 성공!`, type: 'success' });
-    } catch (err) {
-      setToast({ msg: `연결 오류: ${err.message}`, type: 'error' });
-    }
+      const p = await res.json();
+      if (p.error) { setToast({msg:'토큰 오류: '+p.error.message,t:'err'}); setTokenLoading(false); return; }
+      const ud = { userId:p.id, username:p.username||'user', displayName:p.name||p.username||'User', profilePic:p.threads_profile_picture_url||null };
+      setUser(ud); setAccessToken(token.trim());
+      try { sessionStorage.setItem(STORED_TOKEN_KEY,token.trim()); sessionStorage.setItem(STORED_USER_KEY,JSON.stringify(ud)); } catch{}
+      setToast({msg:'@'+ud.username+' 연결 완료',t:'ok'});
+    } catch(err) { setToast({msg:'연결 오류: '+err.message,t:'err'}); }
     setTokenLoading(false);
   };
 
-  useEffect(() => { setPosts(getDailyPosts(date, settings.postsPerDay)); }, [date, settings.postsPerDay]);
-
-  const nav = d => { const n=new Date(date); n.setDate(n.getDate()+d); setDate(n); };
-  const fmtDate = d => d.toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric",weekday:"short"});
-
-  // Real publish to Threads API
-  const handlePublish = async (post) => {
-    if (!accessToken) { setToast({ msg: '토큰이 없습니다. 다시 로그인해주세요.', type: 'error' }); return; }
+  // Single publish
+  const doPublish = async (post) => {
+    if (!accessToken) return;
     setPublishing(post.id);
     try {
-      const res = await fetch('/api/publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken, content: post.content, comments: post.comments }),
-      });
+      const res = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accessToken,content:post.content,comments:post.comments}) });
       const data = await res.json();
       if (data.success) {
-        setPosts(p => p.map(x => x.id===post.id ? {...x, status:"posted"} : x));
-        const commentOk = data.comments?.filter(c=>c.success).length || 0;
-        setToast({ msg: `발행 완료! 댓글 ${commentOk}/4개 작성됨`, type:'success' });
+        setPosts(p => p.map(x => x.id===post.id ? {...x,status:'posted'} : x));
+        setToast({msg:'발행 완료 (댓글 '+(data.comments?.filter(c=>c.success).length||0)+'/4)',t:'ok'});
       } else {
-        setToast({ msg: `발행 실패: ${data.error}`, type:'error' });
+        setPosts(p => p.map(x => x.id===post.id ? {...x,status:'failed'} : x));
+        setToast({msg:'발행 실패: '+data.error,t:'err'});
       }
-    } catch (err) {
-      setToast({ msg: `네트워크 오류: ${err.message}`, type:'error' });
-    }
+    } catch(err) { setToast({msg:'오류: '+err.message,t:'err'}); }
     setPublishing(null);
   };
 
   // Batch publish
   const handlePublishAll = async () => {
-    const scheduled = posts.filter(p => p.status==="scheduled");
-    if (scheduled.length === 0) return;
-
-    setToast({ msg: `${scheduled.length}개 포스트 발행을 시작합니다...`, type:'info' });
-
+    const s = posts.filter(p=>p.status==='scheduled');
+    if (!s.length) return;
+    setToast({msg:s.length+'개 일괄 발행 시작',t:'ok'});
     try {
-      const res = await fetch('/api/publish-batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken, posts: scheduled.map(p => ({ content:p.content, comments:p.comments, scheduledTime:p.scheduledTime })) }),
-      });
+      const res = await fetch('/api/publish-batch', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({accessToken,posts:s.map(p=>({content:p.content,comments:p.comments,scheduledTime:p.scheduledTime}))}) });
       const data = await res.json();
       if (data.success) {
-        setPosts(p => p.map(x => x.status==="scheduled" ? {...x, status:"posted"} : x));
-        setToast({ msg: `${data.published}/${data.total}개 발행 완료!`, type:'success' });
-      } else {
-        setToast({ msg: `일괄 발행 실패: ${data.error}`, type:'error' });
-      }
-    } catch (err) {
-      setToast({ msg: `네트워크 오류`, type:'error' });
-    }
+        setPosts(p => { const u=[...p]; data.results.forEach((r,i)=>{ const idx=u.findIndex(x=>x.id===s[i]?.id); if(idx>=0) u[idx]={...u[idx],status:r.success?'posted':'failed'}; }); return u; });
+        setToast({msg:data.published+'/'+data.total+'개 발행 완료',t:'ok'});
+      } else { setToast({msg:'실패: '+data.error,t:'err'}); }
+    } catch(err) { setToast({msg:'오류: '+err.message,t:'err'}); }
   };
 
-  const regen = () => { setPosts(getDailyPosts(new Date(date.getTime()+Math.random()*86400000), settings.postsPerDay)); setToast({msg:"콘텐츠가 새로 생성되었습니다",type:"info"}); };
-  const share = () => { navigator.clipboard?.writeText(window.location.href); setCopied(true); setTimeout(()=>setCopied(false),2000); };
-
-  const filtered = tab==="all" ? posts : posts.filter(p=>p.status===tab);
-  const sched = posts.filter(p=>p.status==="scheduled").length;
-  const posted = posts.filter(p=>p.status==="posted").length;
+  // Logout
+  const logout = () => { setUser(null); setAccessToken(''); try{sessionStorage.removeItem(STORED_TOKEN_KEY);sessionStorage.removeItem(STORED_USER_KEY)}catch{} };
 
   if (loading) return (
-    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <div style={{width:24,height:24,border:"2px solid var(--bdr2)",borderTopColor:"var(--gold)",borderRadius:"50%",animation:"spin .7s linear infinite"}}/>
-    </div>
+    <><Head><title>Threads Engine</title></Head>
+    <style jsx global>{`body{margin:0;background:#09090b;font-family:system-ui,sans-serif}@keyframes sp{to{transform:rotate(360deg)}}`}</style>
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#09090b'}}>
+      <div style={{width:20,height:20,border:'2px solid #27272a',borderTopColor:'#71717a',borderRadius:'50%',animation:'sp .6s linear infinite'}}/>
+    </div></>
   );
 
-  // ── LOGIN SCREEN ──
+  // ── LOGIN ──
   if (!user) return (
-    <>
-      <Head><title>Threads Engine — 인테리어 콘텐츠 자동화</title></Head>
-      <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20,position:"relative",overflow:"hidden"}}>
-        <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 60% 40% at 50% -10%, rgba(232,197,71,.06), transparent)"}}/>
-        <div className="anim-up" style={{textAlign:"center",position:"relative",zIndex:1,maxWidth:420,width:"100%"}}>
-          <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,var(--gold),#c9a020)",marginBottom:26,boxShadow:"0 8px 48px rgba(232,197,71,.2)"}}><Ico.Threads style={{width:34,height:34,color:"#000"}}/></div>
-          <h1 style={{fontFamily:"'Outfit'",fontSize:36,fontWeight:800,letterSpacing:"-.04em",marginBottom:6}}>Threads Engine</h1>
-          <p style={{color:"var(--t2)",fontSize:13.5,lineHeight:1.7,marginBottom:32}}>AI 인테리어 콘텐츠 자동 생성 · 예약 발행 · 댓글 자동화</p>
-
-          <div style={{background:"var(--bg3)",border:"1px solid var(--bdr)",borderRadius:"var(--r)",padding:20,textAlign:"left",marginBottom:16}}>
-            <label style={{fontSize:12,color:"var(--t2)",marginBottom:8,display:"block",fontWeight:500}}>Threads Access Token 입력</label>
-            <p style={{fontSize:10,color:"var(--t3)",marginBottom:10,lineHeight:1.6}}>Meta Developer 대시보드 → 이용 사례 → 설정 → 사용자 토큰 생성기에서 발급받은 토큰을 입력하세요</p>
-            <div style={{display:"flex",gap:6}}>
-              <input
-                type="password"
-                className="inp"
-                placeholder="THAAhg... 형태의 토큰 붙여넣기"
-                value={tokenInput}
-                onChange={e => setTokenInput(e.target.value)}
-                onKeyDown={e => e.key==='Enter' && handleTokenLogin(tokenInput)}
-                style={{flex:1}}
-              />
-              <button className="btn btn-gold" onClick={() => handleTokenLogin(tokenInput)} disabled={tokenLoading}>
-                {tokenLoading ? "확인 중..." : "연결"}
-              </button>
-            </div>
-          </div>
-
-          <p style={{fontSize:10,color:"var(--t3)"}}>토큰은 브라우저 세션에만 저장되며, 새로고침 시 유지됩니다</p>
-
-          <div style={{marginTop:20,padding:"12px 14px",background:"var(--bg2)",borderRadius:"var(--rs)",border:"1px solid var(--bdr)"}}>
-            <p style={{fontSize:10,color:"var(--t3)",marginBottom:6}}>이 링크를 친구에게 공유하세요</p>
-            <div style={{display:"flex",gap:6}}>
-              <input readOnly value={typeof window!=="undefined"?window.location.href:""} style={{flex:1,padding:"6px 8px",background:"var(--bg)",border:"1px solid var(--bdr)",borderRadius:"var(--rx)",color:"var(--t3)",fontSize:11,outline:"none",fontFamily:"monospace"}}/>
-              <button className="btn btn-ghost" style={{padding:"6px 8px"}} onClick={share}>{copied?<Ico.Check/>:<Ico.Copy/>}</button>
-            </div>
-          </div>
+    <><Head><title>Threads Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/></Head>
+    <style jsx global>{STYLES}</style>
+    <div className="lg-wrap">
+      <div className="lg-inner">
+        <div className="lg-mark">T</div>
+        <h1 className="lg-h">Threads Engine</h1>
+        <p className="lg-sub">콘텐츠 자동화 시스템</p>
+        <div className="lg-box">
+          <label className="lg-label">Access Token</label>
+          <p className="lg-hint">Meta Developer 대시보드에서 발급받은 토큰</p>
+          <input type="password" className="lg-inp" placeholder="토큰을 붙여넣으세요" value={tokenInput} onChange={e=>setTokenInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleTokenLogin(tokenInput)}/>
+          <button className="lg-btn" onClick={()=>handleTokenLogin(tokenInput)} disabled={tokenLoading}>{tokenLoading?'확인 중...':'연결하기'}</button>
         </div>
       </div>
-      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
-    </>
+      {toast && <Toast msg={toast.msg} type={toast.t} onClose={()=>setToast(null)}/>}
+    </div></>
   );
 
   // ── DASHBOARD ──
-  return (
-    <>
-      <Head><title>Threads Engine — @{user.username}</title></Head>
+  const scheduled = posts.filter(p=>p.status==='scheduled');
+  const posted = posts.filter(p=>p.status==='posted');
+  const failed = posts.filter(p=>p.status==='failed');
+  const filtered = tab==='scheduled'?scheduled:tab==='posted'?posted:tab==='failed'?failed:posts;
 
-      <header className="glass" style={{position:"sticky",top:0,zIndex:100,borderBottom:"1px solid var(--bdr)",padding:"0 16px"}}>
-        <div style={{maxWidth:1060,margin:"0 auto",height:52,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"center",width:30,height:30,borderRadius:8,background:"var(--gold)",color:"#000"}}><Ico.Threads style={{width:16,height:16}}/></div>
-            <span style={{fontFamily:"'Outfit'",fontSize:16,fontWeight:700}} className="hide-m">Threads Engine</span>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:5}}>
-            <button className="btn btn-ghost" style={{padding:"5px 9px"}} onClick={share}><Ico.Share/><span className="hide-m">{copied?"복사됨!":"공유"}</span></button>
-            <button className="btn btn-ghost" style={{padding:"5px 9px"}} onClick={()=>setShowSettings(true)}><Ico.Gear/></button>
-            <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 8px",borderRadius:"var(--rs)",background:"var(--bg2)"}}>
-              {user.profilePic ? <img src={user.profilePic} style={{width:24,height:24,borderRadius:"50%"}} alt=""/> : <div style={{width:24,height:24,borderRadius:"50%",background:"linear-gradient(135deg,var(--gold),var(--blu))",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#000"}}>{user.displayName?.[0]||"U"}</div>}
-              <span className="hide-m" style={{fontSize:11,color:"var(--t2)"}}>@{user.username}</span>
-            </div>
-            <a href="#" onClick={(e)=>{e.preventDefault();setUser(null);setAccessToken('');try{sessionStorage.removeItem(STORED_TOKEN_KEY);sessionStorage.removeItem(STORED_USER_KEY)}catch{}}} className="btn btn-ghost" style={{padding:"5px 7px",textDecoration:"none"}}><Ico.Out/></a>
-          </div>
+  return (
+    <><Head><title>Threads Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/></Head>
+    <style jsx global>{STYLES}</style>
+    <div className="shell">
+      {/* Header */}
+      <header className="hd">
+        <div className="hd-l"><span className="hd-mark">T</span><span className="hd-name">Threads Engine</span></div>
+        <div className="hd-r">
+          <span className="hd-user">@{user.username}</span>
+          <button className="b-ghost" onClick={logout}>로그아웃</button>
         </div>
       </header>
 
-      <main style={{maxWidth:1060,margin:"0 auto",padding:"18px 16px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18,flexWrap:"wrap",gap:8}}>
-          <div style={{display:"flex",alignItems:"center",gap:5}}>
-            <button className="btn btn-ghost" style={{padding:6}} onClick={()=>nav(-1)}><Ico.Left/></button>
-            <h2 style={{fontSize:15,fontWeight:600,minWidth:170,textAlign:"center"}}>{fmtDate(date)}</h2>
-            <button className="btn btn-ghost" style={{padding:6}} onClick={()=>nav(1)}><Ico.Right/></button>
-            <button className="btn btn-ghost" style={{padding:"5px 10px",fontSize:11}} onClick={()=>setDate(new Date())}>오늘</button>
+      {/* Toolbar */}
+      <div className="tb">
+        <div className="tb-date">
+          <button className="b-icon" onClick={()=>setDate(d=>new Date(d.getTime()-86400000))}>&lsaquo;</button>
+          <span className="tb-d">{fmtDate(date)}</span>
+          <button className="b-icon" onClick={()=>setDate(d=>new Date(d.getTime()+86400000))}>&rsaquo;</button>
+        </div>
+        <div className="tb-actions">
+          <div className="tgl" onClick={()=>setAutoMode(!autoMode)}>
+            <div className={`tgl-track${autoMode?' on':''}`}><div className="tgl-thumb"/></div>
+            <span className="tgl-label">{autoMode?'자동 발행':'수동'}</span>
           </div>
-          <div style={{display:"flex",gap:5}}>
-            <button className="btn btn-ghost" onClick={regen}><Ico.Spark/> AI 재생성</button>
-            <button className="btn btn-gold" onClick={handlePublishAll}><Ico.Send/> 전체 발행</button>
-          </div>
+          <button className="b-primary" onClick={handlePublishAll} disabled={!scheduled.length}>전체 발행 ({scheduled.length})</button>
         </div>
+      </div>
 
-        {/* Stats */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8,marginBottom:16}}>
-          {[{l:"예약",v:`${sched}개`,c:"var(--gold)"},{l:"발행",v:`${posted}개`,c:"var(--grn)"},{l:"총 포스트",v:`${posts.length}개`,c:"var(--blu)"},{l:"댓글 포함",v:`${posts.length*4}개`,c:"var(--prp)"}].map((s,i)=>
-            <div key={i} className="card" style={{padding:"12px 14px"}}><p style={{fontSize:10,color:"var(--t3)",marginBottom:3}}>{s.l}</p><p style={{fontFamily:"'Outfit'",fontSize:20,fontWeight:700,color:s.c}}>{s.v}</p></div>
-          )}
-        </div>
+      {/* Tabs */}
+      <nav className="nav">
+        {[['scheduled','대기',scheduled],['posted','완료',posted],['failed','실패',failed],['all','전체',posts]].map(([k,l,arr])=>(
+          <button key={k} className={`nav-item${tab===k?' on':''}`} onClick={()=>setTab(k)}>{l}<span className="nav-n">{arr.length}</span></button>
+        ))}
+      </nav>
 
-        <div style={{padding:"10px 14px",background:"var(--gold2)",border:"1px solid rgba(232,197,71,.12)",borderRadius:"var(--rs)",marginBottom:14,display:"flex",alignItems:"center",gap:8,fontSize:11,color:"var(--gold)"}}>
-          <Ico.Link/> 모든 첫 번째 댓글에 스몰테이블 공사신청폼 자동 삽입
-          <a href={CTA_LINK} target="_blank" rel="noopener noreferrer" style={{marginLeft:"auto",color:"var(--gold)",textDecoration:"underline",fontSize:10}}>링크 확인</a>
-        </div>
+      {/* List */}
+      <div className="list">
+        {filtered.length===0 && <div className="empty-msg">{tab==='posted'?'발행 완료된 글이 없습니다':tab==='failed'?'실패한 글이 없습니다':'대기 중인 글이 없습니다'}</div>}
+        {filtered.sort((a,b)=>a.scheduledTime.localeCompare(b.scheduledTime)).map(p=>(
+          <PostCard key={p.id} post={p} publishing={publishing===p.id}
+            onPublish={doPublish} onEdit={p=>setEditPost({...p})}
+            onTimeChange={(id,t)=>setPosts(ps=>ps.map(x=>x.id===id?{...x,scheduledTime:t}:x))}/>
+        ))}
+      </div>
+    </div>
 
-        <div style={{display:"flex",gap:3,marginBottom:14,padding:3,background:"var(--bg2)",borderRadius:"var(--rs)",width:"fit-content"}}>
-          {[{k:"all",l:`전체 (${posts.length})`},{k:"scheduled",l:`예약 (${sched})`},{k:"posted",l:`발행 (${posted})`}].map(t=>
-            <button key={t.k} onClick={()=>setTab(t.k)} style={{padding:"6px 14px",borderRadius:"var(--rx)",border:"none",background:tab===t.k?"var(--bg4)":"transparent",color:tab===t.k?"var(--t1)":"var(--t3)",fontSize:11,fontWeight:500,cursor:"pointer",fontFamily:"inherit"}}>{t.l}</button>
-          )}
-        </div>
-
-        <div className="stagger" style={{display:"flex",flexDirection:"column",gap:8}}>
-          {filtered.sort((a,b)=>a.scheduledTime.localeCompare(b.scheduledTime)).map(p=>
-            <PostCard key={p.id} post={p} publishing={publishing===p.id} onPublish={handlePublish} onEdit={setEditPost} onDelete={id=>setPosts(ps=>ps.filter(x=>x.id!==id))} onTimeChange={(id,t)=>setPosts(ps=>ps.map(x=>x.id===id?{...x,scheduledTime:t}:x))}/>
-          )}
-          {filtered.length===0 && <div style={{textAlign:"center",padding:40,color:"var(--t3)",fontSize:13}}>포스트가 없습니다</div>}
-        </div>
-      </main>
-
-      {/* Edit Modal */}
-      {editPost && (
-        <div className="overlay" onClick={()=>setEditPost(null)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div style={{padding:"16px 20px",borderBottom:"1px solid var(--bdr)",display:"flex",justifyContent:"space-between"}}><h3 style={{fontSize:14,fontWeight:600}}>콘텐츠 수정</h3><button onClick={()=>setEditPost(null)} style={{background:"none",border:"none",color:"var(--t3)",cursor:"pointer"}}>✕</button></div>
-            <div style={{padding:20}}>
-              <label style={{fontSize:11,color:"var(--t3)",marginBottom:5,display:"block"}}>발행 시간</label>
-              <select className="inp" value={editPost.scheduledTime} onChange={e=>setEditPost({...editPost,scheduledTime:e.target.value})} style={{marginBottom:14}}>
-                {ALL_TIMES.map(t=><option key={t}>{t}</option>)}
-              </select>
-              <label style={{fontSize:11,color:"var(--t3)",marginBottom:5,display:"block"}}>본문</label>
-              <textarea className="txa" value={editPost.content} onChange={e=>setEditPost({...editPost,content:e.target.value})} style={{minHeight:150,marginBottom:14}}/>
-              <label style={{fontSize:11,color:"var(--t3)",marginBottom:5,display:"block"}}>자동 댓글 4개</label>
-              {editPost.comments.map((c,i)=>
-                <div key={i} style={{marginBottom:8}}>
-                  <span style={{fontSize:10,color:i===0?"var(--gold)":"var(--t3)"}}>{i===0?"댓글 #1 (CTA)":`댓글 #${i+1}`}</span>
-                  <textarea className="txa" value={c} onChange={e=>{const cs=[...editPost.comments];cs[i]=e.target.value;setEditPost({...editPost,comments:cs})}} style={{minHeight:70,fontSize:11,marginTop:3}}/>
-                </div>
-              )}
-            </div>
-            <div style={{padding:"12px 20px",borderTop:"1px solid var(--bdr)",display:"flex",justifyContent:"flex-end",gap:6}}>
-              <button className="btn btn-ghost" onClick={()=>setEditPost(null)}>취소</button>
-              <button className="btn btn-gold" onClick={()=>{setPosts(ps=>ps.map(x=>x.id===editPost.id?editPost:x));setEditPost(null);setToast({msg:"수정 완료",type:"success"})}}><Ico.Check/> 저장</button>
-            </div>
+    {/* Edit Modal */}
+    {editPost && (
+      <div className="mo-bg" onClick={()=>setEditPost(null)}>
+        <div className="mo" onClick={e=>e.stopPropagation()}>
+          <div className="mo-top"><h3 className="mo-title">포스트 수정</h3><button className="b-ghost" onClick={()=>setEditPost(null)}>닫기</button></div>
+          <input type="time" className="mo-time" value={editPost.scheduledTime} step="60" onChange={e=>setEditPost({...editPost,scheduledTime:e.target.value})}/>
+          <textarea className="mo-ta" value={editPost.content} rows={8} onChange={e=>setEditPost({...editPost,content:e.target.value,hookLine:e.target.value.split('\n')[0]})}/>
+          <p className="mo-cl">댓글 ({editPost.comments.length}개)</p>
+          {editPost.comments.map((c,i)=>(<textarea key={i} className="mo-ct" value={c} rows={3} onChange={e=>{const nc=[...editPost.comments];nc[i]=e.target.value;setEditPost({...editPost,comments:nc})}}/>))}
+          <div className="mo-foot">
+            <button className="b-ghost" onClick={()=>setEditPost(null)}>취소</button>
+            <button className="b-primary" onClick={()=>{setPosts(ps=>ps.map(x=>x.id===editPost.id?{...editPost}:x));setEditPost(null);setToast({msg:'수정 완료',t:'ok'})}}>저장</button>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
-      {/* Settings Modal */}
-      {showSettings && (
-        <div className="overlay" onClick={()=>setShowSettings(false)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div style={{padding:"16px 20px",borderBottom:"1px solid var(--bdr)",display:"flex",justifyContent:"space-between"}}><h3 style={{fontSize:14,fontWeight:600}}>발행 설정</h3><button onClick={()=>setShowSettings(false)} style={{background:"none",border:"none",color:"var(--t3)",cursor:"pointer"}}>✕</button></div>
-            <div style={{padding:20,display:"flex",flexDirection:"column",gap:18}}>
-              <div>
-                <label style={{fontSize:11,color:"var(--t3)"}}>하루 발행 횟수</label>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginTop:6}}>
-                  <input type="range" min="4" max="24" value={settings.postsPerDay} onChange={e=>setSettings({...settings,postsPerDay:+e.target.value})} style={{flex:1,accentColor:"var(--gold)"}}/>
-                  <span style={{fontFamily:"'Outfit'",fontSize:20,fontWeight:700,color:"var(--gold)",minWidth:28}}>{settings.postsPerDay}</span>
-                </div>
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                <div><label style={{fontSize:11,color:"var(--t3)"}}>시작 시간</label><select className="inp" value={settings.startTime} onChange={e=>setSettings({...settings,startTime:e.target.value})} style={{marginTop:4}}>{ALL_TIMES.map(t=><option key={t}>{t}</option>)}</select></div>
-                <div><label style={{fontSize:11,color:"var(--t3)"}}>종료 시간</label><select className="inp" value={settings.endTime} onChange={e=>setSettings({...settings,endTime:e.target.value})} style={{marginTop:4}}>{ALL_TIMES.map(t=><option key={t}>{t}</option>)}</select></div>
-              </div>
-            </div>
-            <div style={{padding:"12px 20px",borderTop:"1px solid var(--bdr)",display:"flex",justifyContent:"flex-end"}}><button className="btn btn-gold" onClick={()=>setShowSettings(false)}><Ico.Check/> 저장</button></div>
-          </div>
-        </div>
-      )}
-
-      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+    {toast && <Toast msg={toast.msg} type={toast.t} onClose={()=>setToast(null)}/>}
     </>
   );
 }
+
+// ─── STYLES ───
+const STYLES = `
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans KR',system-ui,-apple-system,sans-serif;background:#09090b;color:#e4e4e7;-webkit-font-smoothing:antialiased}
+
+/* Login */
+.lg-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#09090b;padding:24px}
+.lg-inner{width:100%;max-width:360px}
+.lg-mark{width:44px;height:44px;background:#e4e4e7;color:#09090b;border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:20px;margin-bottom:32px}
+.lg-h{font-size:26px;font-weight:700;letter-spacing:-0.04em;margin-bottom:4px}
+.lg-sub{font-size:13px;color:#52525b;margin-bottom:40px;font-weight:300}
+.lg-box{background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px}
+.lg-label{font-size:11px;font-weight:600;color:#a1a1aa;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px}
+.lg-hint{font-size:11px;color:#3f3f46;margin-bottom:16px;line-height:1.5}
+.lg-inp{width:100%;padding:11px 14px;background:#09090b;border:1px solid #27272a;border-radius:8px;color:#e4e4e7;font-size:13px;font-family:'JetBrains Mono',monospace;outline:none;transition:border .15s}
+.lg-inp:focus{border-color:#52525b}
+.lg-btn{width:100%;margin-top:14px;padding:11px;background:#e4e4e7;color:#09090b;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;font-family:inherit}
+.lg-btn:hover{opacity:.88}
+.lg-btn:disabled{opacity:.4;cursor:default}
+
+/* Shell */
+.shell{max-width:680px;margin:0 auto;padding:0 20px 64px}
+
+/* Header */
+.hd{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid #18181b}
+.hd-l{display:flex;align-items:center;gap:10px}
+.hd-mark{width:28px;height:28px;background:#e4e4e7;color:#09090b;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px}
+.hd-name{font-size:14px;font-weight:600;letter-spacing:-0.02em}
+.hd-r{display:flex;align-items:center;gap:12px}
+.hd-user{font-size:11px;color:#52525b;font-family:'JetBrains Mono',monospace}
+
+/* Toolbar */
+.tb{display:flex;justify-content:space-between;align-items:center;padding:18px 0 14px;flex-wrap:wrap;gap:12px}
+.tb-date{display:flex;align-items:center;gap:6px}
+.tb-d{font-size:14px;font-weight:500;min-width:130px;text-align:center}
+.tb-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+
+/* Toggle */
+.tgl{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.tgl-track{width:34px;height:18px;background:#27272a;border-radius:9px;position:relative;transition:background .2s}
+.tgl-track.on{background:#059669}
+.tgl-thumb{width:14px;height:14px;background:#52525b;border-radius:50%;position:absolute;top:2px;left:2px;transition:all .2s}
+.tgl-track.on .tgl-thumb{left:18px;background:#fff}
+.tgl-label{font-size:11px;color:#71717a;font-weight:500}
+
+/* Nav */
+.nav{display:flex;gap:1px;border-bottom:1px solid #18181b;margin-bottom:14px}
+.nav-item{padding:10px 14px;font-size:12px;color:#52525b;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;font-weight:400;display:flex;align-items:center;gap:6px;transition:color .15s}
+.nav-item.on{color:#e4e4e7;border-bottom-color:#e4e4e7;font-weight:500}
+.nav-item:hover{color:#a1a1aa}
+.nav-n{font-size:10px;background:#18181b;padding:1px 6px;border-radius:8px;font-family:'JetBrains Mono',monospace}
+.nav-item.on .nav-n{background:#27272a}
+
+/* Post Cards */
+.list{display:flex;flex-direction:column;gap:6px}
+.pc{background:#18181b;border:1px solid #27272a;border-radius:10px;padding:16px 18px;transition:border-color .15s}
+.pc:hover{border-color:#3f3f46}
+.pc-done{opacity:.55}
+.pc-fail{border-color:#7f1d1d}
+.pc-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.pc-left{display:flex;align-items:center;gap:8px}
+.pc-right{display:flex;gap:5px}
+.pc-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.pc-dot.scheduled{background:#ca8a04}
+.pc-dot.posted{background:#059669}
+.pc-dot.failed{background:#dc2626}
+.pc-cat{font-size:10px;color:#71717a;background:#09090b;padding:3px 8px;border-radius:4px;font-weight:500;letter-spacing:.02em}
+.pc-time{background:#09090b;border:1px solid #27272a;border-radius:5px;padding:3px 6px;color:#71717a;font-size:10px;font-family:'JetBrains Mono',monospace;outline:none}
+.pc-time:disabled{opacity:.4}
+.pc-hook{font-size:14px;font-weight:600;line-height:1.55;margin-bottom:6px;letter-spacing:-0.01em;white-space:pre-line}
+.pc-body{font-size:12px;color:#71717a;line-height:1.65}
+.pc-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pc-more{background:none;border:none;color:#52525b;font-size:11px;cursor:pointer;padding:4px 0;font-family:inherit;transition:color .15s}
+.pc-more:hover{color:#a1a1aa}
+.pc-foot{display:flex;gap:10px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #1c1c1f}
+.pc-cmnt{font-size:10px;color:#3f3f46}
+.pc-cta{font-size:9px;color:#ca8a04;background:#1c1a00;padding:2px 6px;border-radius:3px;font-weight:600;letter-spacing:.03em}
+.pc-posted{font-size:11px;color:#059669;font-weight:500}
+.empty-msg{text-align:center;padding:48px 0;color:#3f3f46;font-size:13px}
+
+/* Buttons */
+.b-ghost{background:none;border:1px solid #27272a;color:#71717a;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .12s}
+.b-ghost:hover{border-color:#3f3f46;color:#a1a1aa}
+.b-icon{background:none;border:none;color:#52525b;font-size:20px;cursor:pointer;padding:2px 8px;transition:color .12s;line-height:1}
+.b-icon:hover{color:#e4e4e7}
+.b-sm{background:none;border:1px solid #27272a;color:#71717a;padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer;font-family:inherit;transition:all .12s}
+.b-sm:hover{border-color:#3f3f46;color:#a1a1aa}
+.b-sm.b-accent,.b-sm.b-accent{background:#e4e4e7;color:#09090b;border-color:#e4e4e7;font-weight:600}
+.b-sm.b-accent:hover{opacity:.88}
+.b-sm:disabled{opacity:.35;cursor:default}
+.b-primary{background:#e4e4e7;color:#09090b;border:none;padding:7px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .12s}
+.b-primary:hover{opacity:.88}
+.b-primary:disabled{opacity:.3;cursor:default}
+
+/* Modal */
+.mo-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;backdrop-filter:blur(6px)}
+.mo{background:#18181b;border:1px solid #27272a;border-radius:14px;padding:24px;width:100%;max-width:520px;max-height:82vh;overflow-y:auto}
+.mo-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.mo-title{font-size:15px;font-weight:600}
+.mo-time{width:100%;padding:10px 12px;background:#09090b;border:1px solid #27272a;border-radius:8px;color:#e4e4e7;font-size:13px;font-family:'JetBrains Mono',monospace;outline:none;margin-bottom:10px}
+.mo-ta{width:100%;padding:14px;background:#09090b;border:1px solid #27272a;border-radius:8px;color:#e4e4e7;font-size:13px;line-height:1.65;resize:vertical;outline:none;font-family:inherit}
+.mo-ta:focus{border-color:#3f3f46}
+.mo-cl{font-size:11px;color:#52525b;margin:16px 0 8px;font-weight:500}
+.mo-ct{width:100%;padding:10px;background:#09090b;border:1px solid #1c1c1f;border-radius:7px;color:#71717a;font-size:11px;line-height:1.5;resize:vertical;outline:none;margin-bottom:5px;font-family:inherit}
+.mo-ct:focus{border-color:#3f3f46;color:#e4e4e7}
+.mo-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:8px;font-size:12px;z-index:200;animation:tu .25s;font-weight:500;max-width:90vw}
+.toast-ok{background:#052e16;color:#4ade80;border:1px solid #14532d}
+.toast-err{background:#2a0000;color:#f87171;border:1px solid #450a0a}
+@keyframes tu{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Responsive */
+@media(max-width:640px){
+  .shell{padding:0 14px 40px}
+  .tb{flex-direction:column;align-items:stretch}
+  .tb-actions{justify-content:space-between}
+  .pc-row{flex-direction:column;align-items:flex-start}
+  .pc-right{align-self:flex-end}
+}
+`;
