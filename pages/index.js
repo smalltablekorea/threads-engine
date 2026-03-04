@@ -225,6 +225,7 @@ function Toast({ msg, type, onClose }) {
 // ─── PostCard ───
 function PostCard({ post, onEdit, onPublish, onTimeChange, publishing }) {
   const [expanded, setExpanded] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   return (
     <div className={`pc ${post.status==='posted'?'pc-done':post.status==='failed'?'pc-fail':''}`}>
       <div className="pc-row">
@@ -251,9 +252,21 @@ function PostCard({ post, onEdit, onPublish, onTimeChange, publishing }) {
       <div className={`pc-body ${expanded?'':'pc-clamp'}`}>{post.content.split('\n\n').slice(1).join('\n\n')}</div>
       {!expanded && <button className="pc-more" onClick={()=>setExpanded(true)}>더 보기</button>}
       <div className="pc-foot">
-        <span className="pc-cmnt">댓글 {post.comments.length}개</span>
+        <button className="pc-cmnt-btn" onClick={()=>setShowComments(!showComments)}>
+          댓글 {post.comments.length}개 {showComments?'접기':'보기'}
+        </button>
         {post.comments[0]?.includes(CTA_LINK) && <span className="pc-cta">CTA</span>}
       </div>
+      {showComments && (
+        <div className="pc-comments">
+          {post.comments.map((c,i) => (
+            <div key={i} className="pc-comment">
+              <span className="pc-ci">{i+1}</span>
+              <div className="pc-ct">{c}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -535,8 +548,13 @@ body{font-family:'Noto Sans KR',system-ui,-apple-system,sans-serif;background:#0
 .pc-more{background:none;border:none;color:#52525b;font-size:11px;cursor:pointer;padding:4px 0;font-family:inherit;transition:color .15s}
 .pc-more:hover{color:#a1a1aa}
 .pc-foot{display:flex;gap:10px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #1c1c1f}
-.pc-cmnt{font-size:10px;color:#3f3f46}
+.pc-cmnt-btn{background:none;border:none;color:#52525b;font-size:10px;cursor:pointer;font-family:inherit;padding:0;transition:color .15s}
+.pc-cmnt-btn:hover{color:#a1a1aa}
 .pc-cta{font-size:9px;color:#ca8a04;background:#1c1a00;padding:2px 6px;border-radius:3px;font-weight:600;letter-spacing:.03em}
+.pc-comments{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.pc-comment{display:flex;gap:10px;padding:10px 12px;background:#0f0f12;border:1px solid #1c1c1f;border-radius:8px}
+.pc-ci{font-size:10px;color:#3f3f46;font-family:'JetBrains Mono',monospace;font-weight:600;flex-shrink:0;width:16px;height:16px;display:flex;align-items:center;justify-content:center;background:#18181b;border-radius:4px;margin-top:1px}
+.pc-ct{font-size:11px;color:#a1a1aa;line-height:1.65;white-space:pre-line}
 .pc-posted{font-size:11px;color:#059669;font-weight:500}
 .empty-msg{text-align:center;padding:48px 0;color:#3f3f46;font-size:13px}
 
