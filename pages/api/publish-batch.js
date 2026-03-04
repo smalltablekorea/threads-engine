@@ -1,79 +1,60 @@
 // pages/api/publish-batch.js
-// 다중 포스트 일괄 발행 (순차 처리, rate limit 준수)
+const THREADS_API = 'https://graph.threads.net/v1.0';
 
-import { getSession } from '../../lib/auth';
-import { publishPostWithComments } from '../../lib/threads';
+async function publishPost(userId, token, text) {
+  const cr = await fetch(`${THREADS_API}/${userId}/threads`, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({media_type:'TEXT',text,access_token:token}) });
+  const cd = await cr.json(); if(cd.error) throw new Error(cd.error.message);
+  await new Promise(r=>setTimeout(r,2000));
+  const pr = await fetch(`${THREADS_API}/${userId}/threads_publish`, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({creation_id:cd.id,access_token:token}) });
+  const pd = await pr.json(); if(pd.error) throw new Error(pd.error.message);
+  return pd;
+}
+
+async function replyToPost(userId, token, replyToId, text) {
+  const cr = await fetch(`${THREADS_API}/${userId}/threads`, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({media_type:'TEXT',text,reply_to_id:replyToId,access_token:token}) });
+  const cd = await cr.json(); if(cd.error) throw new Error(cd.error.message);
+  await new Promise(r=>setTimeout(r,1500));
+  const pr = await fetch(`${THREADS_API}/${userId}/threads_publish`, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({creation_id:cd.id,access_token:token}) });
+  const pd = await pr.json(); if(pd.error) throw new Error(pd.error.message);
+  return pd;
+}
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const session = getSession(req);
-  if (!session) {
-    return res.status(401).json({ error: 'not_authenticated' });
-  }
-
+  const accessToken = req.body.accessToken || process.env.THREADS_ACCESS_TOKEN;
   const { posts } = req.body;
-  // posts = [{ content, comments: [...], scheduledTime }]
 
-  if (!posts || !Array.isArray(posts) || posts.length === 0) {
-    return res.status(400).json({ error: 'posts array is required' });
-  }
+  if (!accessToken) return res.status(401).json({ error: 'Token required' });
+  if (!posts || !Array.isArray(posts) || posts.length === 0) return res.status(400).json({ error: 'posts required' });
 
-  // Threads API rate limit: 250 posts / 24h, 50 publish calls / hour
-  // 안전하게 포스트당 30초 간격
-  const MAX_BATCH = 10; // 한 번에 최대 10개
+  const profileRes = await fetch(`${THREADS_API}/me?fields=id,username&access_token=${accessToken}`);
+  const profile = await profileRes.json();
+  if (profile.error) return res.status(401).json({ error: profile.error.message });
+  const userId = profile.id;
+
+  const MAX_BATCH = 10;
   const batch = posts.slice(0, MAX_BATCH);
-
   const results = [];
 
-  try {
-    for (let i = 0; i < batch.length; i++) {
-      const post = batch[i];
-
-      console.log(`[Batch] Publishing ${i + 1}/${batch.length}: ${post.content.substring(0, 50)}...`);
-
-      try {
-        const result = await publishPostWithComments(
-          session.userId,
-          session.accessToken,
-          post.content,
-          post.comments || []
-        );
-
-        results.push({
-          index: i,
-          success: true,
-          postId: result.postId,
-          comments: result.comments,
-        });
-      } catch (err) {
-        results.push({
-          index: i,
-          success: false,
-          error: err.message,
-        });
+  for (let i = 0; i < batch.length; i++) {
+    const p = batch[i];
+    try {
+      const post = await publishPost(userId, accessToken, p.content);
+      const commentResults = [];
+      if (p.comments) {
+        for (let j = 0; j < Math.min(p.comments.length, 4); j++) {
+          await new Promise(r => setTimeout(r, 3000));
+          try {
+            const reply = await replyToPost(userId, accessToken, post.id, p.comments[j]);
+            commentResults.push({ index: j, success: true, id: reply.id });
+          } catch (e) { commentResults.push({ index: j, success: false, error: e.message }); }
+        }
       }
-
-      // Rate limit 방지: 포스트 간 30초 대기 (댓글 포함하면 각 포스트당 ~15초 소요)
-      if (i < batch.length - 1) {
-        await new Promise(r => setTimeout(r, 15000));
-      }
-    }
-
-    const successCount = results.filter(r => r.success).length;
-    console.log(`[Batch] Complete: ${successCount}/${batch.length} published`);
-
-    return res.json({
-      success: true,
-      total: batch.length,
-      published: successCount,
-      results,
-      remaining: posts.length - batch.length,
-    });
-  } catch (error) {
-    console.error('[Batch] Error:', error);
-    return res.status(500).json({ success: false, error: error.message, results });
+      results.push({ index: i, success: true, postId: post.id, comments: commentResults });
+    } catch (e) { results.push({ index: i, success: false, error: e.message }); }
+    if (i < batch.length - 1) await new Promise(r => setTimeout(r, 15000));
   }
+
+  return res.json({ success: true, total: batch.length, published: results.filter(r=>r.success).length, results });
 }
